@@ -11,7 +11,7 @@ data "aws_iam_session_context" "current" {
 
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
-  version = "~> 21.0"
+  version = "~> 21.3"
 
   name               = local.eks_name
   kubernetes_version = local.kubernetes_version
@@ -31,10 +31,10 @@ module "eks" {
   vpc_id     = var.vpc_id
   subnet_ids = var.private_subnet_ids
 
-  # Cluster Secrets. 
+  # Cluster Secrets
   # Disable encryption, to workaround KMS MalformedPolicyDocumentException: The new key policy will not allow you to update the key policy in the future.
   encryption_config = null
   create_kms_key = false
-  # TODO, to enable secrets encryption, try this:
+  # Try the following to fix MalformedPolicyDocumentException.
   # kms_key_administrators = [data.aws_iam_session_context.current.issuer_arn]
 }
