@@ -71,3 +71,13 @@ resource "random_password" "db_password" {
     min_lower        = 1
     min_numeric      = 1
 }
+
+module "kafka" {
+  source             = "../../modules/kafka/aws-msk"
+  project            = var.project
+  owner              = var.owner
+  aws_region         = var.aws_region
+  aws_profile        = var.aws_profile
+  private_subnet_ids = module.network.private_subnets
+  app_security_group_id = module.eks.node_security_group_id
+}
