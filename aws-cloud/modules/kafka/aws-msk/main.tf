@@ -2,11 +2,6 @@
 locals {
   msk_name               = "${var.project}-msk"
   msk_sasl_secret_prefix = "AmazonMSK_"
-  #sasl_scram_test_secret_name = "sasl-scram-test-secret"
-  #sasl_scram_test_secret = {
-  #  username = "sasl-scram-test-user"
-  #  password = "sasl-scram-test-password"
-  #}
 }
 
 # nosemgrep: resource-not-on-allowlist
@@ -74,32 +69,3 @@ resource "aws_kms_alias" "msk_sasl_scram" {
   name          = "alias/${local.msk_name}-sasl-scram"
   target_key_id = aws_kms_key.msk_sasl_scram.key_id
 }
-
-
-# test sasl authentication
-#resource "aws_secretsmanager_secret" "msk_sasl_test_secret" {
-#  name                    = "${local.msk_sasl_secret_prefix}${var.project}/${local.sasl_scram_test_secret_name}"
-#  description             = "To test SASL Scram authentication"
-#  recovery_window_in_days = 0
-#  kms_key_id              = aws_kms_key.msk_sasl_scram.key_id
-#}
-
-# nosemgrep: resource-not-on-allowlist
-#resource "aws_secretsmanager_secret_version" "msk_sasl_test_secret" {
-#  secret_id = aws_secretsmanager_secret.msk_sasl_test_secret.id
-#  secret_string = jsonencode({
-#    username = local.sasl_scram_test_secret.username
-#    password = local.sasl_scram_test_secret.password
-#    }
-#  )
-#}
-
-# nosemgrep: resource-not-on-allowlist
-#resource "aws_msk_scram_secret_association" "msk_test_sasl_secret" {
-#  cluster_arn     = aws_msk_cluster.main.arn
-#  secret_arn_list = [aws_secretsmanager_secret.msk_sasl_test_secret.arn]
-#  depends_on      = [aws_secretsmanager_secret_version.msk_sasl_test_secret]
-#  lifecycle {
-#    ignore_changes = [secret_arn_list]
-#  }
-#}

@@ -70,6 +70,7 @@ resource "random_password" "db_password" {
     min_upper        = 1
     min_lower        = 1
     min_numeric      = 1
+    override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 module "kafka" {
