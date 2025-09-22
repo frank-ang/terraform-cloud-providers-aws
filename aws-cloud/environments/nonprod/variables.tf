@@ -25,3 +25,7 @@ variable "tm_iam_prefix" {
 variable "secret_prefix" {
   type = string
 }
+
+variable "secret_manager_prefix" {
+  type = string
+}

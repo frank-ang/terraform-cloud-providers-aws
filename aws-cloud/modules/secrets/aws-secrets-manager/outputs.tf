@@ -3,5 +3,5 @@ output "root_db_secret_arn" {
 }
 
 output "vault_installer_role_arn" {
-  value = module.aws_sm_vault_installer.iam_role_arn
+  value = module.irsa_vault_installer.arn
 }

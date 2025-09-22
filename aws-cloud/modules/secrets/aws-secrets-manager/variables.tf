@@ -18,6 +18,10 @@ variable "eks_cluster_name" {
   type = string
 }
 
+variable "eks_oidc_provider_arn" {
+  type = string
+}
+
 variable "database_hostname" {
   type = string
 }
@@ -28,14 +32,18 @@ variable "database_password" {
 
 variable "vault_installer_namespace" {
   type = string
-  default = "foo"
+  default = "tm-system"
 }
 
 variable "vault_installer_serviceaccount" {
   type = string
-  default = "bar"
+  default = "vault-installer"
 }
 
-variable "secret_manager_prefix" {
+variable "tm_iam_prefix" {
+  type = string
+}
+
+variable "secret_prefix" {
   type = string
 }
