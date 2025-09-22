@@ -36,12 +36,6 @@ variable "vault_installer_serviceaccount" {
   default = "bar"
 }
 
-variable "tm_iam_prefix" {
+variable "secret_manager_prefix" {
   type = string
-  default = "foobar"
-}
-
-variable "secret_prefix" {
-  type = string
-  default = "foobar"
 }

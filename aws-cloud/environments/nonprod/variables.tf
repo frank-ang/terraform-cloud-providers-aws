@@ -17,3 +17,11 @@ variable "aws_profile" {
 variable "project_domain" {
   type = string
 }
+
+variable "tm_iam_prefix" {
+  type = string
+}
+
+variable "secret_prefix" {
+  type = string
+}

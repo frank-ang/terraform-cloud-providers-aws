@@ -62,6 +62,7 @@ module "secrets-manager" {
   eks_cluster_name   = module.eks.cluster_name
   database_hostname  = module.db.cluster_endpoint
   database_password  = random_password.db_password.result
+  secret_manager_prefix = "${var.tm_iam_prefix}/${var.secret_prefix}"
 }
 
 resource "random_password" "db_password" {

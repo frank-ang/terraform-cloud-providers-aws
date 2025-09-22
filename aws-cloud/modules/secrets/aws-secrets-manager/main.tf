@@ -4,7 +4,8 @@
 #helm install -n kube-system secrets-provider-aws aws-secrets-manager/secrets-store-csi-driver-provider-aws
 
 data "aws_eks_cluster" "eks" {
-    name = var.eks_cluster_name
+    depends_on = [var.eks_cluster_name]
+    name       = var.eks_cluster_name
 }
 
 locals {
@@ -36,8 +37,8 @@ resource "helm_release" "secrets-provider-aws" {
 
 # database root password
 resource "aws_secretsmanager_secret" "root_db_secret" {
-  name                    = "${var.tm_iam_prefix}/${var.secret_prefix}/${local.db_secrets_name}"
-  description             = "TM database root credentials"
+  name                    = "${var.secret_manager_prefix}/${local.db_secrets_name}"
+  description             = "TM database root credentials for ${var.database_hostname}"
   recovery_window_in_days = 0
 }
 
