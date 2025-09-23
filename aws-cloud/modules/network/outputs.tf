@@ -23,6 +23,10 @@ output "aws_route53_private_zone_id" {
   value = aws_route53_zone.main.zone_id
 }
 
+output "aws_route53_private_zone_arn" {
+  value = aws_route53_zone.main.arn
+}
+
 output "project_domain" {
   value = var.project_domain
 }

@@ -29,13 +29,14 @@ module "network" {
 }
 
 module "eks" {
-  source             = "../../modules/eks-cluster"
+  source             = "../../modules/k8s/eks-auto-mode"
   project            = var.project
   owner              = var.owner
   aws_region         = var.aws_region
   aws_profile        = var.aws_profile
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.private_subnets
+  route53_private_zone_arn = module.network.aws_route53_private_zone_arn
 }
 
 module "db" {

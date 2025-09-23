@@ -17,6 +17,7 @@ module "cert_manager_irsa_role" {
   version = "6.2.1"
   name                  = "${var.project}-cert-manager"
   attach_cert_manager_policy = true
+  cert_manager_hosted_zone_arns = [var.route53_private_zone_arn]
   oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn # local.eks_oidc_provider_arn
@@ -61,23 +62,6 @@ resource "helm_release" "cert_manager" {
     }
   ]
 }
-
-# TODO: terraform plan/apply Error: API did not recognize GroupVersionKind from manifest (CRD may not be installed)
-# workaround? terraform apply -target=helm_release.cert_manager -auto-approve
-# nosemgrep: resource-not-on-allowlist
-#resource "kubernetes_manifest" "cert_manager_cluster_issuer_selfsigned" {
-#  manifest = {
-#    "apiVersion" = "cert-manager.io/v1"
-#    "kind"       = "ClusterIssuer"
-#    "metadata" = {
-#      "name" = "${local.cert_manager_selfsigned_cluster_issuer}"
-#    }
-#    "spec" = {
-#      "selfSigned" = {}
-#    }
-#  }
-#  depends_on = [helm_release.cert_manager]
-#}
 
 resource "kubectl_manifest" "cert_manager_cluster_issuer_selfsigned" {
   depends_on = [helm_release.cert_manager]
