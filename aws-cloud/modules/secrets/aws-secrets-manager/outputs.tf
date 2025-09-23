@@ -5,3 +5,7 @@ output "root_db_secret_arn" {
 output "vault_installer_role_arn" {
   value = module.irsa_vault_installer.arn
 }
+
+output "role_permissions_boundary_arn" {
+  value = aws_iam_policy.application_permission_boundary.arn
+}

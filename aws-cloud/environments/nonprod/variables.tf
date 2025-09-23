@@ -26,6 +26,12 @@ variable "secret_prefix" {
   type = string
 }
 
-variable "secret_manager_prefix" {
+variable "vault_installer_namespace" {
   type = string
+  default = "tm-system"
+}
+
+variable "vault_installer_serviceaccount" {
+  type = string
+  default = "vault-installer"
 }

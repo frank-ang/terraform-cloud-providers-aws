@@ -31,6 +31,7 @@ resource "helm_release" "secrets-provider-aws" {
   repository = "https://aws.github.io/secrets-store-csi-driver-provider-aws"
   chart      = "secrets-store-csi-driver-provider-aws"
   namespace  = "kube-system"
+  version    = "2.0.0"
 }
 
 # database root password
