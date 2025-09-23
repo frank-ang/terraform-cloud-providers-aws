@@ -54,7 +54,16 @@ output "bootstrap_brokers_sasl_scram" {
   value = module.kafka.bootstrap_brokers_sasl_scram
 }
 
-#cluster_services ingress_class_name
+output "ingress_class_name" {
+  value = module.eks.ingress_class_name
+}
+
+output "cert_manager_selfsigned_cluster_issuer" {
+  value = module.eks.cert_manager_selfsigned_cluster_issuer
+}
+
+#cluster_services ingress_class_name "ingress-nginx-private"
+
 #cluster_services cert_manager_selfsigned_cluster_issuer
 #secret basic_auth_credentials_user
 #secret basic_auth_credentials_password

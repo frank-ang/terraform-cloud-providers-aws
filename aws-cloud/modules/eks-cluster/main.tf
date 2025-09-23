@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    kubectl = {
+      source = "gavinbunney/kubectl"
+      version = "1.19.0"
+    }
+  }
+}
+
 locals {
   eks_name           = "${var.project}-eks"
   kubernetes_version = "1.33"
@@ -12,6 +21,10 @@ data "aws_iam_session_context" "current" {
 
 provider "kubernetes" {
   config_path = "~/.kube/config"  # Path to your kubeconfig file
+}
+
+provider "kubectl" {
+  config_path = "~/.kube/config"
 }
 
 provider "helm" {
