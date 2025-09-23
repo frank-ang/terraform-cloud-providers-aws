@@ -9,3 +9,7 @@ output "cluster_endpoint" {
 output "security_group_id" {
   value = module.aurora_postgresql_v2.security_group_id
 }
+
+output "master_username" {
+  value = var.master_username
+}

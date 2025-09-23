@@ -29,13 +29,14 @@ module "network" {
 }
 
 module "eks" {
-  source             = "../../modules/eks-cluster"
+  source             = "../../modules/k8s/eks-auto-mode"
   project            = var.project
   owner              = var.owner
   aws_region         = var.aws_region
   aws_profile        = var.aws_profile
   vpc_id             = module.network.vpc_id
   private_subnet_ids = module.network.private_subnets
+  route53_private_zone_arn = module.network.aws_route53_private_zone_arn
 }
 
 module "db" {
@@ -52,17 +53,20 @@ module "db" {
   master_password    = random_password.db_password.result
 }
 
-
 module "secrets-manager" {
-  source             = "../../modules/secrets/aws-secrets-manager"
-  project            = var.project
-  owner              = var.owner
-  aws_region         = var.aws_region
-  aws_profile        = var.aws_profile
-  eks_cluster_name   = module.eks.cluster_name
-  database_hostname  = module.db.cluster_endpoint
-  database_password  = random_password.db_password.result
-  secret_manager_prefix = "${var.tm_iam_prefix}/${var.secret_prefix}"
+  source                         = "../../modules/secrets/aws-secrets-manager"
+  project                        = var.project
+  owner                          = var.owner
+  aws_region                     = var.aws_region
+  aws_profile                    = var.aws_profile
+  eks_cluster_name               = module.eks.cluster_name
+  eks_oidc_provider_arn          = module.eks.oidc_provider_arn
+  database_hostname              = module.db.cluster_endpoint
+  database_password              = random_password.db_password.result
+  tm_iam_prefix                  = var.tm_iam_prefix
+  secret_prefix                  = var.secret_prefix
+  vault_installer_namespace      = var.vault_installer_namespace
+  vault_installer_serviceaccount = var.vault_installer_serviceaccount
 }
 
 resource "random_password" "db_password" {
@@ -70,14 +74,15 @@ resource "random_password" "db_password" {
     min_upper        = 1
     min_lower        = 1
     min_numeric      = 1
+    override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
 module "kafka" {
-  source             = "../../modules/kafka/aws-msk"
-  project            = var.project
-  owner              = var.owner
-  aws_region         = var.aws_region
-  aws_profile        = var.aws_profile
-  private_subnet_ids = module.network.private_subnets
+  source                = "../../modules/kafka/aws-msk"
+  project               = var.project
+  owner                 = var.owner
+  aws_region            = var.aws_region
+  aws_profile           = var.aws_profile
+  private_subnet_ids    = module.network.private_subnets
   app_security_group_id = module.eks.node_security_group_id
 }
