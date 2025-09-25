@@ -1,6 +1,6 @@
 terraform {
   required_providers {
-    kubectl = {
+    kubectl = { # TODO UNUSED.
       source = "gavinbunney/kubectl"
       version = "1.19.0"
     }
@@ -15,42 +15,33 @@ locals {
 
 data "aws_caller_identity" "current" {}
 data "aws_iam_session_context" "current" {
-  # "This data source provides information on the IAM source role of an STS assumed role. For non-role ARNs, this data source simply passes the ARN through in issuer_arn."
   arn = data.aws_caller_identity.current.arn
 }
 
-provider "kubernetes" {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    exec {
-        api_version = "client.authentication.k8s.io/v1beta1"
-        args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-        command     = "aws"
-    }
+data "aws_eks_cluster" "eks" {
+  name = module.eks.cluster_name
+  depends_on = [ module.eks ]
 }
 
-provider "kubectl" {
-    host                   = module.eks.cluster_endpoint
-    cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-    exec {
-        api_version = "client.authentication.k8s.io/v1beta1"
-        args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-        command     = "aws"
-    }
-  #token                  = data.aws_eks_cluster_auth.main.token
-  #load_config_file       = false
+provider "kubernetes" {
+    config_path = "~/.kube/config"
+}
+
+provider "kubectl" { # TODO UNUSED.
+  config_path = "~/.kube/config" 
 }
 
 provider "helm" {
     kubernetes = {
-        host                   = module.eks.cluster_endpoint
-        cluster_ca_certificate = base64decode(module.eks.cluster_certificate_authority_data)
-        exec = {
-            api_version = "client.authentication.k8s.io/v1beta1"
-            args        = ["eks", "get-token", "--cluster-name", module.eks.cluster_name]
-            command     = "aws"
-        }
+      config_path = "~/.kube/config"
     }
+}
+
+resource "null_resource" "kubectl" { # TODO rename to kubectx
+    provisioner "local-exec" {
+        command = "aws eks --region ${var.aws_region} update-kubeconfig --name ${data.aws_eks_cluster.eks.name}"
+    }
+    depends_on = [ module.eks ]
 }
 
 module "eks" {
@@ -79,6 +70,4 @@ module "eks" {
   # Disable encryption, to workaround KMS MalformedPolicyDocumentException: The new key policy will not allow you to update the key policy in the future.
   encryption_config = null
   create_kms_key = false
-  # Try the following to fix MalformedPolicyDocumentException.
-  # kms_key_administrators = [data.aws_iam_session_context.current.issuer_arn]
 }

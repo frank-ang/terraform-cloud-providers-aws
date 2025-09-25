@@ -33,7 +33,3 @@ output "node_iam_role_arn" {
 output "cert_manager_selfsigned_cluster_issuer" {
   value = local.cert_manager_selfsigned_cluster_issuer
 }
-
-#output "cluster_addons" {
-#  value = module.eks.cluster_addons
-#}

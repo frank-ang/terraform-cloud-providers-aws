@@ -5,22 +5,23 @@ locals {
   ingress_nginx_ingress_class = "ingress-nginx-private"
 }
 
-resource "kubernetes_namespace" "ingress_nginx" {
-  metadata {
-    name = local.ingress_nginx_namespace
-  }
-  depends_on = [
-    module.eks
-  ]
-}
+#resource "kubernetes_namespace" "ingress_nginx" {
+#  metadata {
+#    name = local.ingress_nginx_namespace
+#  }
+#  depends_on = [
+#    module.eks, data.aws_eks_cluster.eks
+#  ]
+#}
 
 # nosemgrep: resource-not-on-allowlist
 resource "helm_release" "ingress_nginx" {
+  depends_on = [ null_resource.kubectl ]
   name       = local.ingress_nginx_chart_name
   repository = "https://kubernetes.github.io/ingress-nginx"
   chart      = local.ingress_nginx_chart_name
-  namespace  = kubernetes_namespace.ingress_nginx.id
-
+  namespace  = local.ingress_nginx_namespace # kubernetes_namespace.ingress_nginx.id
+  create_namespace = true
   # ingress-nginx helm values
   # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml
   set = [
@@ -70,13 +71,6 @@ resource "helm_release" "ingress_nginx" {
       value = "true"
     },
   ]
-
-  depends_on = [
-    # module.aws_load_balancer_controller_irsa_role,
-    # helm_release.aws_load_balancer_controller
-    module.eks
-  ]
-
 }
 
 

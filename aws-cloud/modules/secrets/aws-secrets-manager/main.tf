@@ -53,10 +53,10 @@ module "irsa_vault_installer" {
   policies = {
     "min_access" = aws_iam_policy.vault_installer_policy.arn
   }
-  permissions_boundary = aws_iam_policy.application_permission_boundary.arn
+  permissions_boundary = aws_iam_policy.vault_installer_policy.arn # application_permission_boundary.arn
   oidc_providers = {
     main = {
-      provider_arn               = "var.eks_oidc_provider_arn"
+      provider_arn               = var.eks_oidc_provider_arn
       namespace_service_accounts = ["${var.vault_installer_namespace}:${var.vault_installer_serviceaccount}"]
     }
   }

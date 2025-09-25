@@ -1,4 +1,4 @@
-# AWS Cloud Platform for Thought Machine Vault Core
+# AWS Cloud Platform for Thought Machine Vault Core ![Tested](https://img.shields.io/badge/VaultCore5.7-in_progress-yellow)
 
 Terraform templates to provision AWS Cloud infrastructure prerequisites necessary for deployment of the Thought Machine Vault Core banking platform. A prescriptive infrastructure is 
 
@@ -44,11 +44,21 @@ aws-cloud/
 
 ## Quick Start
 
+### Prerequisites
+
+* Workstation
+  * Tested on: Linux host, Bash shell
+  * aws cli v2
+  * kubectl
+  * terraform >= 1.0
+* AWS Account
+  * IAM principal with sufficient permissions
+
 ### Configure
 
-Configure `terraform.tfvars` in the selected `[environments](./environments)/ENV_NAME` subdirectory.
+Configure `terraform.tfvars` in the selected [environments](./environments)/ENV_NAME subdirectory.
 
-### Deploy Infrastucture
+### Create Environment
 
 ```sh
 terraform init
@@ -56,16 +66,13 @@ terraform plan
 terraform apply
 ```
 
-### Verify
+### Install Thought Machine Vault Core
 
-Configure `kubectl` and verify connectivity to Kubernetes cluster.
-```sh
-source terraform.tfvars
-eks_cluster_name=$(terraform output -raw eks_cluster_name)
-aws eks update-kubeconfig --region "$aws_region" --profile "$aws_profile" --name "$eks_cluster_name"
-```
+Please refer to Thought Machine Vault Core documentation.
 
-### Destroy Infrastructure
+### Destroy Environment (optional)
+
+To deprovision a temporary environment.
 
 ```sh
 terraform destroy
