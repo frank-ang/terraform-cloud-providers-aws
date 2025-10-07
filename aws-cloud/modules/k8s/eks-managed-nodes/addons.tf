@@ -1,12 +1,8 @@
 module "vpc_cni_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
-  # version = "~> 5.0"
-
   name = "vpc-cni" # "${var.project}-AmazonEKSVPCCNIRole"
-
   attach_vpc_cni_policy = true
   vpc_cni_enable_ipv4   = true
-
   oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
@@ -15,20 +11,27 @@ module "vpc_cni_irsa" {
   }
 }
 
-#resource "aws_eks_addon" "vpc_cni_driver" {
-#  cluster_name             = module.eks.cluster_name
-#  addon_name               = "vpc-cni"
-#  addon_version            = "v1.49.0-eksbuild.1"
-#  service_account_role_arn = module.vpc_cni_irsa.iam_role_arn
-#}
-
-# https://davegallant.ca/blog/amazon-ebs-csi-driver-terraform/
-resource "aws_eks_addon" "ebs_csi_driver" {
-  cluster_name             = module.eks.cluster_name
-  addon_name               = "aws-ebs-csi-driver"
-  addon_version            = "v1.49.0-eksbuild.1" # "v1.29.1-eksbuild.1" # "v1.49.0-eksbuild.1"
-  service_account_role_arn = aws_iam_role.ebs_csi_driver.arn
+module "ebs_csi_irsa" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
+  name = "ebs-csi"
+  attach_ebs_csi_policy = true
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-node"]
+    }
+  }
 }
+
+# BELOW is deprecated
+# https://davegallant.ca/blog/amazon-ebs-csi-driver-terraform/
+#resource "aws_eks_addon" "ebs_csi_driver" {
+#  count = 0
+#  cluster_name             = module.eks.cluster_name
+#  addon_name               = "aws-ebs-csi-driver"
+#  addon_version            = "v1.49.0-eksbuild.1" # "v1.29.1-eksbuild.1" # "v1.49.0-eksbuild.1"
+#  service_account_role_arn = aws_iam_role.ebs_csi_driver.arn
+#}
 
 resource "aws_iam_role" "ebs_csi_driver" {
   name               = "ebs-csi-driver"
