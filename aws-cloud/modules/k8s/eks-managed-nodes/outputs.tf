@@ -18,6 +18,10 @@ output "oidc_provider_arn" {
   value = module.eks.oidc_provider_arn
 }
 
+output "oidc_provider" {
+  value = module.eks.oidc_provider
+}
+
 output "ingress_class_name" {
   value = local.ingress_nginx_ingress_class
 }

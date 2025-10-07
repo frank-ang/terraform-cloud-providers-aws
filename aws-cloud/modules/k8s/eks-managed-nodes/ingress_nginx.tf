@@ -7,6 +7,7 @@ locals {
 
 # nosemgrep: resource-not-on-allowlist
 resource "helm_release" "ingress_nginx" {
+  count = 0  # TEMP DISABLE bypass helm deploy failures
   depends_on = [ null_resource.kubectl ]
   name       = local.ingress_nginx_chart_name
   repository = "https://kubernetes.github.io/ingress-nginx"

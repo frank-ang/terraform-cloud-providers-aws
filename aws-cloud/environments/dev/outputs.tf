@@ -14,6 +14,11 @@ output "eks_oidc_provider_arn" {
   value = module.eks.oidc_provider_arn
 }
 
+output "eks_oidc_provider" {
+  value = module.eks.oidc_provider
+}
+
+
 output "public_subnets" {
   value = module.network.public_subnets
 }
