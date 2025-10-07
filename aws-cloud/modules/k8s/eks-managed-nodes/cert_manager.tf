@@ -6,13 +6,6 @@ locals {
   cert_manager_selfsigned_cluster_issuer = "selfsigned-issuer"
 }
 
-#resource "kubernetes_namespace" "cert_manager" {
-#  depends_on = [ module.eks ]
-#  metadata {
-#   name = local.cert_manager_namespace
-# }
-#}
-
 module "cert_manager_irsa_role" {
   depends_on = [ module.eks ]
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
@@ -79,18 +72,3 @@ spec:
  selfSigned: {}
 YAML
 }
-
-# nosemgrep: resource-not-on-allowlist
-#resource "kubernetes_manifest" "cert_manager_cluster_issuer_selfsigned" {
-#  depends_on = [helm_release.cert_manager] # Dependency on kubectl 
-#  manifest = {
-#    "apiVersion" = "cert-manager.io/v1"
-#    "kind"       = "ClusterIssuer"
-#    "metadata" = {
-#      "name" = "${local.cert_manager_selfsigned_cluster_issuer}"
-#    }
-#    "spec" = {
-#      "selfSigned" = {}
-#    }
-#  }
-#}

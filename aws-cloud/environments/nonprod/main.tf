@@ -29,7 +29,8 @@ module "network" {
 }
 
 module "eks" {
-  source             = "../../modules/k8s/eks-auto-mode"
+  # source             = "../../modules/k8s/eks-auto-mode"
+  source             = "../../modules/k8s/eks-managed-nodes"
   project            = var.project
   owner              = var.owner
   aws_region         = var.aws_region
@@ -40,6 +41,7 @@ module "eks" {
 }
 
 module "db" {
+  # count = 1
   source             = "../../modules/db/aurora-serverless"
   project            = var.project
   owner              = var.owner

@@ -64,7 +64,7 @@ module "irsa_vault_installer" {
 
 # permissions boundary for the Vault Installer. vault-installer-policy.json
 resource "aws_iam_policy" "vault_installer_policy" {
-  name   = "${var.project}-vault-installer"
+  name   = "${var.project}-vault-installer-policy"
   policy = data.aws_iam_policy_document.vault_installer_policy.json
 }
 
@@ -92,6 +92,21 @@ data "aws_iam_policy_document" "vault_installer_policy" {
       "secretsmanager:DescribeSecret",
       "secretsmanager:DeleteSecret",
       "secretsmanager:UpdateSecret",
+      "secretsmanager:PutSecretValue",
+    ]
+    resources = [
+      "arn:aws:secretsmanager:${var.aws_region}:${local.aws_account_id}:secret:${var.tm_iam_prefix}/*",
+    ]
+  }
+}
+
+data "aws_iam_policy_document" "application_permission_boundary" {
+  statement {
+    sid = "AllowGetSecretsOnlyInPath"
+    effect = "Allow"
+    actions = [
+      "secretsmanager:GetSecretValue",
+      "secretsmanager:DescribeSecret"
     ]
     resources = [
       "arn:aws:secretsmanager:${var.aws_region}:${local.aws_account_id}:secret:${var.tm_iam_prefix}/*",
@@ -100,19 +115,6 @@ data "aws_iam_policy_document" "vault_installer_policy" {
 }
 
 # vault-role-permission-boundary / application permission boundary
-data "aws_iam_policy_document" "application_permission_boundary" {
-  statement {
-    sid = "AllowGetSecretsOnlyInPath"
-    effect = "Allow"
-    actions = [
-      "secretsmanager:GetSecretValue"
-    ]
-    resources = [
-      "arn:aws:secretsmanager:${var.aws_region}:${local.aws_account_id}:secret:${var.tm_iam_prefix}/*",
-    ]
-  }
-}
-
 resource "aws_iam_policy" "application_permission_boundary" {
   name        = "${var.project}-vault-role-permission-boundary"
   description = "TM Vault applications permissions to AWS Secret Manager"
