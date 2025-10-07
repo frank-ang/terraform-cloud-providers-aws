@@ -11,7 +11,7 @@ module "vpc_cni_irsa" {
   }
 }
 
-module "ebs_csi_irsa" {
+module "ebs_csi_irsa" { # alternate way to define IRSA.
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
   name = "ebs-csi"
   attach_ebs_csi_policy = true
@@ -23,15 +23,14 @@ module "ebs_csi_irsa" {
   }
 }
 
-# BELOW is deprecated
+resource "aws_eks_addon" "ebs_csi_driver" {
+  cluster_name             = module.eks.cluster_name
+  addon_name               = "aws-ebs-csi-driver"
+  addon_version            = "v1.49.0-eksbuild.1"
+  service_account_role_arn = aws_iam_role.ebs_csi_driver.arn # module.ebs_csi_irsa.arn
+}
+
 # https://davegallant.ca/blog/amazon-ebs-csi-driver-terraform/
-#resource "aws_eks_addon" "ebs_csi_driver" {
-#  count = 0
-#  cluster_name             = module.eks.cluster_name
-#  addon_name               = "aws-ebs-csi-driver"
-#  addon_version            = "v1.49.0-eksbuild.1" # "v1.29.1-eksbuild.1" # "v1.49.0-eksbuild.1"
-#  service_account_role_arn = aws_iam_role.ebs_csi_driver.arn
-#}
 
 resource "aws_iam_role" "ebs_csi_driver" {
   name               = "ebs-csi-driver"

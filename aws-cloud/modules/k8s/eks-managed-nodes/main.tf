@@ -67,19 +67,19 @@ module "eks" {
   # addons
   addons = {
     coredns = {}
-    eks-pod-identity-agent = {
-      before_compute = true
-    }
+    #eks-pod-identity-agent = {
+    #  before_compute = true
+    #}
     kube-proxy = {}
     vpc-cni = {
       before_compute = true # Ensures CNI is configured before nodes join
       service_account_role_arn = module.vpc_cni_irsa.arn
     }
-    aws-ebs-csi-driver = {
-      most_recent = true
-      service_account_role_arn = module.ebs_csi_irsa.arn
-      # resolve_conflicts_on_create = "OVERWRITE"
-    }
+    #aws-ebs-csi-driver = {
+    #  most_recent = true
+    #  service_account_role_arn = module.ebs_csi_irsa.arn
+    #  # resolve_conflicts_on_create = "OVERWRITE"
+    #}
   }
 
   # Optional: Adds the current caller identity as an administrator via cluster access entry
