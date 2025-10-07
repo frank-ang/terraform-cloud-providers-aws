@@ -73,6 +73,7 @@ module "eks" {
     kube-proxy = {}
     vpc-cni = {
       before_compute = true # Ensures CNI is configured before nodes join
+      service_account_role_arn = module.vpc_cni_irsa.arn
     }
 #    aws-ebs-csi-driver = {
 #      most_recent = true
