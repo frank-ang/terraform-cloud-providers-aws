@@ -39,6 +39,22 @@ module "eks" {
   route53_private_zone_arn = module.network.aws_route53_private_zone_arn
 }
 
+module "db" {
+  # count = 1
+  source             = "../../modules/db/aurora-serverless"
+  project            = var.project
+  owner              = var.owner
+  aws_region         = var.aws_region
+  aws_profile        = var.aws_profile
+  vpc_id             = module.network.vpc_id
+  database_subnet_group_name = module.network.database_subnet_group_name
+  app_security_group_id = module.eks.node_security_group_id
+  database_version   = "16.9"
+  master_username    = "postgres"
+  master_password    = random_password.db_password.result
+}
+
+
 module "secrets-manager" {
   source                         = "../../modules/secrets/aws-secrets-manager"
   project                        = var.project
@@ -47,7 +63,7 @@ module "secrets-manager" {
   aws_profile                    = var.aws_profile
   eks_cluster_name               = module.eks.cluster_name
   eks_oidc_provider_arn          = module.eks.oidc_provider_arn
-  database_hostname              = "TODO_INSERT_module.db.cluster_endpoint"
+  database_hostname              = module.db.cluster_endpoint # "TODO_INSERT_module.db.cluster_endpoint"
   database_password              = random_password.db_password.result
   tm_iam_prefix                  = var.tm_iam_prefix
   secret_prefix                  = var.secret_prefix
@@ -61,4 +77,14 @@ resource "random_password" "db_password" {
     min_lower        = 1
     min_numeric      = 1
     override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
+module "kafka" {
+  source                = "../../modules/kafka/aws-msk"
+  project               = var.project
+  owner                 = var.owner
+  aws_region            = var.aws_region
+  aws_profile           = var.aws_profile
+  private_subnet_ids    = module.network.private_subnets
+  app_security_group_id = module.eks.node_security_group_id
 }
