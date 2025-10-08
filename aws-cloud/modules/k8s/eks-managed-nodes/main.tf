@@ -67,19 +67,11 @@ module "eks" {
   # addons
   addons = {
     coredns = {}
-    #eks-pod-identity-agent = {
-    #  before_compute = true
-    #}
     kube-proxy = {}
     vpc-cni = {
       before_compute = true # Ensures CNI is configured before nodes join
       service_account_role_arn = module.vpc_cni_irsa.arn
     }
-    #aws-ebs-csi-driver = {
-    #  most_recent = true
-    #  service_account_role_arn = module.ebs_csi_irsa.arn
-    #  # resolve_conflicts_on_create = "OVERWRITE"
-    #}
   }
 
   # Optional: Adds the current caller identity as an administrator via cluster access entry
@@ -106,6 +98,14 @@ module "eks" {
       type        = "ingress"
       self        = true
     }
+    ingress_self_all = {
+      description = "Control plane to Istio sidecar injection webhook"
+      protocol    = "-1"
+      from_port   = 15017
+      to_port     = 15017
+      type        = "ingress"
+      source_cluster_security_group = true
+    }
   }
 
   node_security_group_tags = {
@@ -115,8 +115,8 @@ module "eks" {
   eks_managed_node_groups = {
     "${var.project}-on" = {
       min_size       = 1
-      max_size       = 3
-      desired_size   = 1
+      max_size       = 10
+      desired_size   = 6
       instance_types = ["m6a.2xlarge", "m5a.2xlarge", "m5.2xlarge", "c6a.2xlarge", "c5a.2xlarge", "c5.2xlarge"]
       capacity_type  = "ON_DEMAND"
       labels = {
@@ -124,6 +124,19 @@ module "eks" {
         "karpenter.sh/controller" = "true"
       }
       # iam_role_additional_policies = { AmazonEBSCSIDriverPolicy = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy" }
+    }
+  }
+}
+
+module "vpc_cni_irsa" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
+  name = "vpc-cni" # "${var.project}-AmazonEKSVPCCNIRole"
+  attach_vpc_cni_policy = true
+  vpc_cni_enable_ipv4   = true
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-node"]
     }
   }
 }
