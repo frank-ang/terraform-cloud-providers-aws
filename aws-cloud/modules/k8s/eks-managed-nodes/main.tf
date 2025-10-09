@@ -27,7 +27,7 @@ provider "kubernetes" {
     config_path = "~/.kube/config"
 }
 
-provider "kubectl" { # TODO UNUSED.
+provider "kubectl" {
   config_path = "~/.kube/config" 
 }
 

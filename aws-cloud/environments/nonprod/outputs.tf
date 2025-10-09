@@ -46,19 +46,19 @@ output "vault_installer_role_arn" {
 }
 
 output "msk_sasl_scram_cmk_arn" {
-  value = module.kafka.msk_sasl_scram_cmk_arn
+  value = length(module.kafka) > 0 ? module.kafka[0].msk_sasl_scram_cmk_arn : null
 }
 
 output "msk_cluster_arn" {
-  value = module.kafka.msk_cluster_arn
+  value = length(module.kafka) > 0 ? module.kafka[0].msk_cluster_arn : null
+}
+
+output "bootstrap_brokers_sasl_scram" {
+  value = length(module.kafka) > 0 ? module.kafka[0].bootstrap_brokers_sasl_scram : null
 }
 
 output "sm_role_permissions_boundary_arn" {
   value = module.secrets-manager.role_permissions_boundary_arn
-}
-
-output "bootstrap_brokers_sasl_scram" {
-  value = module.kafka.bootstrap_brokers_sasl_scram
 }
 
 output "ingress_class_name" {
