@@ -3,14 +3,12 @@ locals {
   ingress_nginx_ingress_class = "ingress-nginx-private"
 }
 
-# nosemgrep: resource-not-on-allowlist
 resource "helm_release" "ingress_nginx" {
-  # count = 0  # TEMP DISABLE bypass helm deploy failures
   depends_on = [ null_resource.kubectl, module.aws_load_balancer_controller_irsa_role, helm_release.aws_load_balancer_controller ]
   name       = "ingress-nginx"
   repository = "https://kubernetes.github.io/ingress-nginx"
-  chart      = "ingress-nginx" # local.ingress_nginx_chart_name
-  namespace  = "ingress-nginx" # local.ingress_nginx_namespace # kubernetes_namespace.ingress_nginx.id
+  chart      = "ingress-nginx"
+  namespace  = "ingress-nginx"
   create_namespace = true
   version = "4.13.2"
   # https://github.com/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml

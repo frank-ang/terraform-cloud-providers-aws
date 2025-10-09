@@ -1,14 +1,9 @@
-#locals {
-#  aws_load_balancer_controller_chart_name      = "aws-load-balancer-controller"
-#  aws_load_balancer_controller_service_account = local.aws_load_balancer_controller_chart_name
-#  # aws_load_balancer_controller_namespace       = "kube-system"
-#}
+# https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
+# https://github.com/aws/eks-charts/tree/master/stable/aws-load-balancer-controller
 
 module "aws_load_balancer_controller_irsa_role" {
-  # https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
-  # version = "5.60.0"
-  name                              = "aws-load-balancer-controller" # "${module.eks.cluster_name}-loadbalancer"
+  name                              = "aws-load-balancer-controller"
   attach_load_balancer_controller_policy = true
   oidc_providers = {
     main = {
@@ -18,9 +13,10 @@ module "aws_load_balancer_controller_irsa_role" {
   }
 }
 
-# nosemgrep: resource-not-on-allowlist
 resource "helm_release" "aws_load_balancer_controller" {
-  # https://github.com/aws/eks-charts/tree/master/stable/aws-load-balancer-controller
+  depends_on = [
+    null_resource.kubectl #, module.aws_load_balancer_controller_irsa_role
+  ]
   name       = "aws-load-balancer-controller"
   repository = "https://aws.github.io/eks-charts"
   chart      = "aws-load-balancer-controller"
@@ -33,11 +29,11 @@ resource "helm_release" "aws_load_balancer_controller" {
     },
     {
       name  = "serviceAccount.create"
-      value = true # false # true
+      value = true
     },
     {
       name  = "serviceAccount.name"
-      value = "aws-load-balancer-controller" # local.aws_load_balancer_controller_service_account
+      value = "aws-load-balancer-controller"
     },
     {
       name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
@@ -47,8 +43,5 @@ resource "helm_release" "aws_load_balancer_controller" {
       name  = "vpcId"
       value = var.vpc_id
     }
-  ]
-  depends_on = [
-    module.aws_load_balancer_controller_irsa_role
   ]
 }

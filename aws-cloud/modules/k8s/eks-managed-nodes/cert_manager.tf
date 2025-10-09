@@ -1,8 +1,5 @@
 # https://cert-manager.io/docs/
 locals {
-  cert_manager_chart_name      = "cert-manager"
-  cert_manager_namespace       = local.cert_manager_chart_name
-  cert_manager_service_account = local.cert_manager_chart_name
   cert_manager_selfsigned_cluster_issuer = "selfsigned-issuer"
 }
 
@@ -16,18 +13,17 @@ module "cert_manager_irsa_role" {
   oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
-      namespace_service_accounts = ["${local.cert_manager_namespace}:${local.cert_manager_service_account}"]
+      namespace_service_accounts = ["cert-manager:cert-manager"]
     }
   }
 }
 
-# nosemgrep: resource-not-on-allowlist
 resource "helm_release" "cert_manager" {
   depends_on = [ null_resource.kubectl ]
-  name       = local.cert_manager_chart_name
+  name       = "cert-manager"
   repository = "https://charts.jetstack.io"
-  chart      = local.cert_manager_chart_name
-  namespace  = local.cert_manager_namespace # kubernetes_namespace.cert_manager.id
+  chart      = "cert-manager"
+  namespace  = "cert-manager"
   create_namespace = true
 
   set = [
@@ -37,7 +33,7 @@ resource "helm_release" "cert_manager" {
     },
     {
       name  = "serviceAccount.name"
-      value = local.cert_manager_service_account
+      value = "cert-manager"
     },
     {
       name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"

@@ -1,3 +1,22 @@
+module "vpc_cni_irsa" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
+  name = "vpc-cni"
+  attach_vpc_cni_policy = true
+  vpc_cni_enable_ipv4   = true
+  oidc_providers = {
+    main = {
+      provider_arn               = module.eks.oidc_provider_arn
+      namespace_service_accounts = ["kube-system:aws-node"]
+    }
+  }
+}
+
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name             = module.eks.cluster_name
+  addon_name               = "vpc-cni"
+  service_account_role_arn = module.vpc_cni_irsa.arn
+}
+
 module "ebs_csi_irsa" {
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
   name = "ebs-csi"
@@ -9,7 +28,7 @@ module "ebs_csi_irsa" {
     }
   }
 }
-# https://davegallant.ca/blog/amazon-ebs-csi-driver-terraform/
+
 resource "aws_eks_addon" "ebs_csi_driver" {
   cluster_name             = module.eks.cluster_name
   addon_name               = "aws-ebs-csi-driver"
@@ -18,10 +37,6 @@ resource "aws_eks_addon" "ebs_csi_driver" {
   resolve_conflicts_on_update = "OVERWRITE"
 }
 
-
-
-# https://cert-manager.io/docs/
-# nosemgrep: resource-not-on-allowlist
 resource "helm_release" "metrics_server" {
   depends_on = [ null_resource.kubectl ]
   name       = "metrics-server"
@@ -29,7 +44,6 @@ resource "helm_release" "metrics_server" {
   chart      = "metrics-server"
   namespace  = "kube-system"
 }
-
 
 # https://github.com/kubernetes-sigs/external-dns/blob/master/docs/tutorials/aws.md
 resource "aws_eks_addon" "external_dns" {
@@ -40,11 +54,10 @@ resource "aws_eks_addon" "external_dns" {
 }
 
 module "external_dns_irsa" {
-  # https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html
   source  = "terraform-aws-modules/iam/aws//modules/iam-role-for-service-accounts"
   name = "external-dns"
   attach_external_dns_policy    = true
-  external_dns_hosted_zone_arns = [var.route53_private_zone_arn] # ["arn:aws:route53:::hostedzone/IClearlyMadeThisUp"]
+  external_dns_hosted_zone_arns = [var.route53_private_zone_arn]
   oidc_providers = {
     main = {
       provider_arn               = module.eks.oidc_provider_arn
