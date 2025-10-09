@@ -14,10 +14,6 @@ output "eks_oidc_provider_arn" {
   value = module.eks.oidc_provider_arn
 }
 
-output "eks_oidc_provider" {
-  value = module.eks.oidc_provider
-}
-
 output "public_subnets" {
   value = module.network.public_subnets
 }
@@ -54,10 +50,6 @@ output "sm_role_permissions_boundary_arn" {
   value = module.secrets-manager.role_permissions_boundary_arn
 }
 
-output "bootstrap_brokers" {
-  value = module.kafka.bootstrap_brokers
-}
-
 output "bootstrap_brokers_sasl_scram" {
   value = module.kafka.bootstrap_brokers_sasl_scram
 }
@@ -69,3 +61,9 @@ output "ingress_class_name" {
 output "cert_manager_selfsigned_cluster_issuer" {
   value = module.eks.cert_manager_selfsigned_cluster_issuer
 }
+
+#cluster_services ingress_class_name "ingress-nginx-private"
+
+#cluster_services cert_manager_selfsigned_cluster_issuer
+#secret basic_auth_credentials_user
+#secret basic_auth_credentials_password

@@ -29,7 +29,6 @@ module "network" {
 }
 
 module "eks" {
-  # source             = "../../modules/k8s/eks-auto-mode"
   source             = "../../modules/k8s/eks-managed-nodes"
   project            = var.project
   owner              = var.owner
@@ -55,6 +54,7 @@ module "db" {
   master_password    = random_password.db_password.result
 }
 
+
 module "secrets-manager" {
   source                         = "../../modules/secrets/aws-secrets-manager"
   project                        = var.project
@@ -63,7 +63,7 @@ module "secrets-manager" {
   aws_profile                    = var.aws_profile
   eks_cluster_name               = module.eks.cluster_name
   eks_oidc_provider_arn          = module.eks.oidc_provider_arn
-  database_hostname              = module.db.cluster_endpoint
+  database_hostname              = module.db.cluster_endpoint # "TODO_INSERT_module.db.cluster_endpoint"
   database_password              = random_password.db_password.result
   tm_iam_prefix                  = var.tm_iam_prefix
   secret_prefix                  = var.secret_prefix
