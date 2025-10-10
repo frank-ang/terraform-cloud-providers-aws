@@ -39,14 +39,17 @@ locals {
   base64_sasl_scram_test_secret_password = base64encode(local.sasl_scram_test_secret.password)
   strimzi_kafka_ssl_dir_path = "/strimzi-kafka-certs"
 }
+# CRDs are upgraded outside of helm:
+# kubectl apply -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.47.0/strimzi-crds-0.47.0.yaml 
 
 resource "helm_release" "strimzi" {
+  count = 1
   name       = "strimzi-cluster-operator"
   repository = "oci://quay.io/strimzi-helm/"
   chart      = "strimzi-kafka-operator"
   namespace  = "strimzi"
   create_namespace = true
-  version    = "0.47.0" # "0.35.0"
+  version    = "0.48.0" # "0.35.0"
   set = [
     {
       name  = "replicas"
@@ -65,8 +68,71 @@ resource "kubernetes_namespace" "kafka" {
   }
 }
 
-# nosemgrep: resource-not-on-allowlist
-resource "kubectl_manifest" "kafka" {
+resource "kubectl_manifest" "single_node_kafka_nodepool" {
+  count = 1
+  depends_on = [
+    helm_release.strimzi,
+  ]
+  yaml_body = <<-EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: KafkaNodePool
+metadata:
+  name: dual-role
+  labels:
+    strimzi.io/cluster: single-node-cluster
+spec:
+  replicas: 1
+  roles:
+    - controller
+    - broker
+  storage:
+    type: persistent-claim
+    size: 30Gi
+    deleteClaim: true
+    kraftMetadata: shared
+    class: gp2
+EOF
+}
+
+resource "kubectl_manifest" "single_node_kafka_cluster" {
+  count = 1
+  depends_on = [
+    helm_release.strimzi, kubectl_manifest.single_node_kafka_cluster
+  ]
+  yaml_body = <<-EOF
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: single-node-cluster
+  annotations:
+    strimzi.io/node-pools: enabled
+    strimzi.io/kraft: enabled
+spec:
+  kafka:
+    version: 4.1.0
+    metadataVersion: 4.1.0
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+EOF
+}
+
+resource "kubectl_manifest" "kafka_cluster_old" {
   count = 0
   # https://sourcegraph.iap.tmachine.io/git.gaia.tmachine.io/diffusion/CORE/-/blob/experimental/bwithers/kafka_operator/strimzi/kafka-cluster.yaml
   yaml_body = <<-EOF
@@ -166,6 +232,14 @@ spec:
   #   generateCertificateAuthority: false
   # clientsCa:
   #   generateCertificateAuthority: false
+    resources:
+      requests:
+        memory: 64Gi
+        cpu: "8"
+      limits:
+        memory: 64Gi
+        cpu: "12"
+
   zookeeper:
     replicas: 3
     storage:
@@ -188,6 +262,8 @@ EOF
 # test sasl scram 
 # nosemgrep: resource-not-on-allowlist
 resource "kubectl_manifest" "kafka_test_sasl_secret" {
+  count = 0
+  depends_on      = [helm_release.strimzi]
   yaml_body = <<-EOF
 apiVersion: v1
 kind: Secret
@@ -206,6 +282,8 @@ resource "time_sleep" "kafka_test_sasl_secret_wait" {
 
 # nosemgrep: resource-not-on-allowlist
 resource "kubectl_manifest" "kafka_test_sasl_secret_kafkauser" {
+  count = 0
+  depends_on = [time_sleep.kafka_test_sasl_secret_wait]
   yaml_body  = <<-EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaUser
@@ -223,11 +301,11 @@ spec:
           name: ${local.sasl_scram_test_secret_name}
           key: ${local.sasl_scram_test_secret_password_field}
   EOF
-  depends_on = [time_sleep.kafka_test_sasl_secret_wait]
 }
 
 # nosemgrep: resource-not-on-allowlist
 resource "kubectl_manifest" "kafka_broker_internal_cert" {
+  count = 0
   yaml_body = <<-EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
