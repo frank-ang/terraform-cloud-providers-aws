@@ -97,6 +97,6 @@ module "strimzi" {
   aws_region            = var.aws_region
   aws_profile           = var.aws_profile
   ingress_class_name = module.eks.ingress_class_name
-  kafka_version  = "3.9.x"
+  kafka_version         = "3.9.0"
   cert_manager_selfsigned_cluster_issuer = module.eks.cert_manager_selfsigned_cluster_issuer
 }

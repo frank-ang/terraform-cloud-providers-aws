@@ -23,8 +23,8 @@ provider "helm" {
 }
 
 locals {
-  kafka_namespace             = "kafka-system"
-  kafka_name                  = "strimzi-kafka-${var.project}"
+  kafka_namespace             = "kafka"
+  kafka_name                  = "kafka-${var.project}"
   kafka_subdomain             = "${local.kafka_namespace}.${var.project_domain}"
   kafka_broker_hostnames      = formatlist("kafka-%s.${local.kafka_subdomain}", range(var.kafka_broker_replicas))
   kafka_bootstrap_hostname    = "bootstrap.${local.kafka_subdomain}"
@@ -39,9 +39,8 @@ locals {
   base64_sasl_scram_test_secret_password = base64encode(local.sasl_scram_test_secret.password)
   strimzi_kafka_ssl_dir_path = "/strimzi-kafka-certs"
 }
-# CRDs are upgraded outside of helm:
-# kubectl apply -f https://github.com/strimzi/strimzi-kafka-operator/releases/download/0.47.0/strimzi-crds-0.47.0.yaml 
 
+# CRDs are upgraded outside of helm.
 resource "helm_release" "strimzi" {
   count = 1
   name       = "strimzi-cluster-operator"
@@ -49,7 +48,7 @@ resource "helm_release" "strimzi" {
   chart      = "strimzi-kafka-operator"
   namespace  = "strimzi"
   create_namespace = true
-  version    = "0.48.0" # "0.35.0"
+  version    = "0.45.1" # Strimzi 0.45 is the last minor Strimzi version with support for ZooKeeper
   set = [
     {
       name  = "replicas"
@@ -68,7 +67,7 @@ resource "kubernetes_namespace" "kafka" {
   }
 }
 
-resource "kubectl_manifest" "single_node_kafka_nodepool" {
+resource "kubectl_manifest" "kafka_nodepool" {
   count = 1
   depends_on = [
     helm_release.strimzi,
@@ -77,13 +76,13 @@ resource "kubectl_manifest" "single_node_kafka_nodepool" {
 apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaNodePool
 metadata:
-  name: dual-role
+  name: pool
+  namespace: ${local.kafka_namespace}
   labels:
-    strimzi.io/cluster: single-node-cluster
+    strimzi.io/cluster: ${local.kafka_name}
 spec:
-  replicas: 1
+  replicas: 3
   roles:
-    - controller
     - broker
   storage:
     type: persistent-claim
@@ -94,53 +93,19 @@ spec:
 EOF
 }
 
-resource "kubectl_manifest" "single_node_kafka_cluster" {
+resource "kubectl_manifest" "kafka_cluster" {
   count = 1
   depends_on = [
-    helm_release.strimzi, kubectl_manifest.single_node_kafka_cluster
+    helm_release.strimzi, kubectl_manifest.kafka_cluster
   ]
-  yaml_body = <<-EOF
-apiVersion: kafka.strimzi.io/v1beta2
-kind: Kafka
-metadata:
-  name: single-node-cluster
-  annotations:
-    strimzi.io/node-pools: enabled
-    strimzi.io/kraft: enabled
-spec:
-  kafka:
-    version: 4.1.0
-    metadataVersion: 4.1.0
-    listeners:
-      - name: plain
-        port: 9092
-        type: internal
-        tls: false
-      - name: tls
-        port: 9093
-        type: internal
-        tls: true
-    config:
-      offsets.topic.replication.factor: 1
-      transaction.state.log.replication.factor: 1
-      transaction.state.log.min.isr: 1
-      default.replication.factor: 1
-      min.insync.replicas: 1
-  entityOperator:
-    topicOperator: {}
-    userOperator: {}
-EOF
-}
-
-resource "kubectl_manifest" "kafka_cluster_old" {
-  count = 0
-  # https://sourcegraph.iap.tmachine.io/git.gaia.tmachine.io/diffusion/CORE/-/blob/experimental/bwithers/kafka_operator/strimzi/kafka-cluster.yaml
   yaml_body = <<-EOF
 apiVersion: kafka.strimzi.io/v1beta2
 kind: Kafka
 metadata:
   name: ${local.kafka_name}
   namespace: ${local.kafka_namespace}
+  annotations:
+    strimzi.io/node-pools: enabled
 spec:
   kafka:
     version: ${var.kafka_version}
@@ -183,80 +148,45 @@ spec:
           bootstrap:
             host: ${local.kafka_bootstrap_hostname}
             annotations:
-            #  kubernetes.io/ingress.class: ${var.ingress_class_name}
           brokers:
           - broker: 0
             host: ${local.kafka_broker_hostnames[0]}
             annotations:
               external-dns.alpha.kubernetes.io/hostname: ${local.kafka_broker_hostnames[0]}
-            #  kubernetes.io/ingress.class: ${var.ingress_class_name}
           - broker: 1
             host: ${local.kafka_broker_hostnames[1]}
             annotations:
               external-dns.alpha.kubernetes.io/hostname: ${local.kafka_broker_hostnames[1]}
-            #  kubernetes.io/ingress.class: ${var.ingress_class_name}
           - broker: 2
             host:  ${local.kafka_broker_hostnames[2]}
             annotations:
               external-dns.alpha.kubernetes.io/hostname: ${local.kafka_broker_hostnames[2]}
-            #  kubernetes.io/ingress.class: ${var.ingress_class_name}
           brokerCertChainAndKey:
             secretName: ${local.kafka_broker_internal_cert}
             certificate: tls.crt
             key: tls.key
-    storage:
-      type: persistent-claim
-      class: gp2
-      size: 4Gi
-      deleteClaim: true
     config:
+      message.max.bytes: 4194304
+      replica.fetch.max.bytes: 5242880
+      unclean.leader.election.enable: false
+      min.insync.replicas: 2
+      log.message.timestamp.type: CreateTime
       offsets.topic.replication.factor: ${var.kafka_topc_replication_factor}
       default.replication.factor: ${var.kafka_topc_replication_factor}
-      auto.create.topics.enable: false
-      unclean.leader.election.enable: false
-      delete.topic.enable: true
-      allow.everyone.if.no.acl.found: true
-      auto.create.topics.enable: false
-      delete.topic.enable: true
-      leader.imbalance.check.interval.seconds: 10
-      log.retention.hours: 168
-      message.max.bytes: 4194304
-      min.insync.replicas: 2
-      num.partitions: 1
-      num.recovery.threads.per.data.dir: 16
-      num.replica.fetchers: 2
       offsets.retention.minutes: 20160
-      replica.fetch.max.bytes: 5242880
-      replica.socket.timeout.ms: 10000
-  # clusterCa:
-  #   generateCertificateAuthority: false
-  # clientsCa:
-  #   generateCertificateAuthority: false
-    resources:
-      requests:
-        memory: 64Gi
-        cpu: "8"
-      limits:
-        memory: 64Gi
-        cpu: "12"
-
+      auto.create.topics.enable: true
+      temp.auto.create.topics.enable: false
   zookeeper:
     replicas: 3
     storage:
       type: persistent-claim
       size: 20Gi
-      class: gp2
       deleteClaim: true
+      class: gp2
   entityOperator:
     topicOperator: {}
-    userOperator:
-      watchedNamespace:  ${local.kafka_namespace}
-      reconciliationIntervalSeconds: 10
-EOF 
-  depends_on = [
-    helm_release.strimzi,
-    kubectl_manifest.kafka_test_sasl_secret
-  ]
+    userOperator: {}
+EOF
 }
 
 # test sasl scram 
@@ -305,13 +235,13 @@ spec:
 
 # nosemgrep: resource-not-on-allowlist
 resource "kubectl_manifest" "kafka_broker_internal_cert" {
-  count = 0
+  count = 1
   yaml_body = <<-EOF
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: ${local.kafka_broker_internal_cert}
-  namespace: ${kubernetes_namespace.kafka.id}
+  namespace: ${local.kafka_namespace}
 spec:
   secretName: ${local.kafka_broker_internal_cert}
   issuerRef:

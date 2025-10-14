@@ -24,7 +24,7 @@ variable ingress_class_name {
 
 variable "kafka_version" {
   type = string
-  default = "3.9.x"
+  default = "3.9.0"
 }
 
 variable "kafka_broker_replicas" {
