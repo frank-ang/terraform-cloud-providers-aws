@@ -29,7 +29,7 @@ module "network" {
 }
 
 module "eks" {
-  source             = "../../modules/k8s/eks-auto-mode"
+  source             = "../../modules/k8s/eks-managed-nodes"
   project            = var.project
   owner              = var.owner
   aws_region         = var.aws_region
@@ -52,6 +52,7 @@ module "db" {
   master_username    = "postgres"
   master_password    = random_password.db_password.result
 }
+
 
 module "secrets-manager" {
   source                         = "../../modules/secrets/aws-secrets-manager"
@@ -78,6 +79,7 @@ resource "random_password" "db_password" {
 }
 
 module "kafka" {
+  count = 0
   source                = "../../modules/kafka/aws-msk"
   project               = var.project
   owner                 = var.owner
@@ -85,4 +87,16 @@ module "kafka" {
   aws_profile           = var.aws_profile
   private_subnet_ids    = module.network.private_subnets
   app_security_group_id = module.eks.node_security_group_id
+}
+
+module "strimzi" {
+  source                = "../../modules/kafka/strimzi"
+  project               = var.project
+  project_domain        = var.project_domain
+  owner                 = var.owner
+  aws_region            = var.aws_region
+  aws_profile           = var.aws_profile
+  ingress_class_name = module.eks.ingress_class_name
+  kafka_version         = "3.9.0"
+  cert_manager_selfsigned_cluster_issuer = module.eks.cert_manager_selfsigned_cluster_issuer
 }
